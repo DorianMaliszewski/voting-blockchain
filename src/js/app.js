@@ -2,7 +2,7 @@ App = {
   web3Provider: null,
   contracts: {},
   account: "0x0",
-  hasVoted: false,
+  voter: {},
 
   init: function() {
     return App.initWeb3();
@@ -43,13 +43,26 @@ App = {
         .votedEvent(
           {},
           {
-            fromBlock: 0,
-            toBlock: "latest"
+            fromBlock: "latest"
           }
         )
         .watch(function(error, event) {
           console.log("Event triggered", event);
+          console.log("votedEvent");
           App.render();
+        });
+
+      instance
+        .addRightToVote(
+          {},
+          {
+            fromBlock: "latest",
+            to: "latest"
+          }
+        )
+        .watch(function(error, event) {
+          App.render();
+          console.log("addRightToVote");
         });
     });
   },
@@ -61,6 +74,12 @@ App = {
 
     loader.show();
     content.hide();
+
+    var candidatesResults = $("#candidatesResults");
+    candidatesResults.empty();
+
+    var candidatesSelect = $("#candidatesSelect");
+    candidatesSelect.empty();
 
     // Load account data
     web3.eth.getCoinbase(function(err, account) {
@@ -108,9 +127,10 @@ App = {
         }
         return electionInstance.voters(App.account);
       })
-      .then(function(hasVoted) {
+      .then(function(voter) {
+        console.log(voter);
         // Do not allow a user to vote
-        if (hasVoted) {
+        if (!voter || voter[2] || voter[0].c[0] === 0) {
           $("form").hide();
         }
         loader.hide();
