@@ -74,3 +74,8 @@ By using the *--reset* option you reset the blockchain too.
       - Reload the page
   - You don't have the event that reload the page when submitting a vote :
     - Known issue by Metamask on Chrome : Close the browser and reopen it
+
+
+## To add
+
+- Retirer des private pour des externals/internals et modifiers

@@ -145,7 +145,12 @@ App = {
     var candidateId = $("#candidatesSelect").val();
     App.contracts.Election.deployed()
       .then(function(instance) {
-        return instance.vote(candidateId, { from: App.account });
+        // Definir le gas nécéssaire
+        return instance.vote(candidateId, {
+          from: App.account,
+          gas: 1500000,
+          gasPrice: web3.toWei(200, "gwei")
+        });
       })
       .then(function(result) {
         // Wait for votes to update
