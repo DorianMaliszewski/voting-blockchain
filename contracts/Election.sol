@@ -47,13 +47,21 @@ contract Election {
 
     }
 
-    function giveRightToVote(address voter) public {
+    //
+    // Give Right To Vote
+    //
+    modifier canGiveRightToVote(address voter) {
         require(
             msg.sender == chairPerson,
             "Only chairperson can give right to vote."
         );
         require(!voters[voter].voted, "The voter already voted.");
         require(voters[voter].weight == 0, "The voter can't vote");
+
+        _;
+    }
+
+    function giveRightToVote(address voter) public canGiveRightToVote(voter) {
         voters[voter].weight = 1;
         emit addRightToVote(voter);
     }
@@ -68,6 +76,9 @@ contract Election {
         }
     }
 
+    //
+    // To change the endtime and add candidate
+    //
     function setTimeBeforeEnd(uint256 _timeInMinutes) public {
         endDate = now + (_timeInMinutes * 1 minutes);
     }
@@ -81,22 +92,25 @@ contract Election {
         );
     }
 
-    function vote(uint256 _candidateId) public {
+    //
+    // Vote action
+    //
+    modifier canVote(uint256 _candidateId) {
         // Check if can vote
         require(voters[msg.sender].weight != 0, "You have no right to vote");
-
         // Require that they haven't voted
         require(!voters[msg.sender].voted, "The voter has already voted");
-
+        // Check if vote is not overtime
+        require(now < endDate, "It's too late to vote");
         // Check valid candidate
         require(
             _candidateId <= candidatesCount && _candidateId > 0,
             "The candidate doesn't exist"
         );
+        _;
+    }
 
-        // Check if vote is not overtime
-        require(now < endDate, "It's too late to vote");
-
+    function vote(uint256 _candidateId) public canVote(_candidateId) {
         //Record that voter has voted
         voters[msg.sender].voted = true;
         voters[msg.sender].vote = _candidateId;
@@ -107,17 +121,23 @@ contract Election {
         emit votedEvent(_candidateId);
     }
 
-    function delegate(address to) public {
-        address _to = to;
+    //
+    // Delegation
+    //
+    modifier canDelegate(address _to) {
         Voter storage sender = voters[msg.sender];
         require(!sender.voted, "You already voted.");
-
         require(_to != msg.sender, "Self-delegation is disallowed.");
-
         while (voters[_to].delegate_to != address(0)) {
             _to = voters[_to].delegate_to;
             require(_to != msg.sender, "Found loop in delegation.");
         }
+        _;
+    }
+
+    function delegate(address to) public canDelegate(to) {
+        address _to = to;
+        Voter storage sender = voters[msg.sender];
 
         sender.voted = true;
         sender.delegate_to = _to;
@@ -129,6 +149,9 @@ contract Election {
         }
     }
 
+    //
+    // Winning function
+    //
     function winningProposal() public view returns (uint256 winningProposal_) {
         uint256 winningVoteCount = 0;
         for (uint256 p = 0; p < candidatesCount; p++) {
@@ -143,6 +166,9 @@ contract Election {
         winnerName_ = candidates[winningProposal()].name;
     }
 
+    //
+    // Helping function the transform hex string to ascii
+    //
     function bytes32ToString(bytes32 x) private view returns (string memory) {
         bytes memory bytesString = new bytes(32);
         uint256 charCount = 0;
@@ -160,4 +186,5 @@ contract Election {
         }
         return string(bytesStringTrimmed);
     }
+
 }
